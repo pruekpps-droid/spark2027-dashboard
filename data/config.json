@@ -1,0 +1,19 @@
+{
+  "planName": "SPARK 2027",
+  "sourceFile": "input/Spark2027.xlsx",
+  "bucketToWorkstream": [
+    ["99",    "99PMO Tasks"],
+    ["01",    "01Seminar"],
+    ["02",    "02Exhibition"],
+    ["03",    "03Media and PR"],
+    ["04",    "04Website"],
+    ["05",    "05Regis. & Guest"],
+    ["06_01", "08Spark Hack"],
+    ["06_02", "06Spark Sense"],
+    ["06_0",  "07Activity"],
+    ["07",    "09On_event"]
+  ],
+  "defaultWorkstream": "99PMO Tasks",
+  "maskOwners": false,
+  "keepManualFields": ["cur", "next", "delay", "root", "impact", "recovery", "recDate", "exec", "manual"]
+}
