@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SPARK 2027 Executive Project Tracking Dashboard</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="hero-main">
+    <h1>SPARK 2027 EXECUTIVE PROJECT TRACKING</h1>
+    <p>Planner Excel task database with EVP progress update · Event 15–16 Jan 2027</p>
+    <nav class="nav">
+      <button id="nav-dash" onclick="go('dash')">Dashboard</button>
+      <button id="nav-ana" onclick="go('ana')">Analytics View</button>
+      <button id="nav-gantt" onclick="go('gantt')">Gantt View</button>
+      <button id="nav-detail" onclick="go('detail')">Task Detail</button>
+      <button id="nav-bgauge" onclick="go('bgauge')">Bucket Gauges</button>
+      <button id="nav-timeline" onclick="go('timeline')">Timeline · Excel</button>
+      <button onclick="openEd()">Edit Data</button>
+      <button onclick="openImport()" style="background:linear-gradient(150deg,#d1fae5,#a7f3d0)">⬆ Import Planner Excel</button>
+      <button onclick="exportCSV()">Export CSV</button>
+      <button onclick="exportTimelinePPTX()">Export Timeline PPT</button>
+      <button onclick="exportPNG()">Export PNG</button>
+    </nav>
+  </div>
+  <div class="snap">
+    <span>Snapshot</span><b id="snapDate"></b>
+    <div id="dataSrc" class="dsrc"></div><small>Snapshot = วันที่ของเครื่อง · Days Remaining = Due Date − Snapshot</small>
+  </div>
+</header>
+
+<div class="kpis" id="kpis"></div>
+
+<section id="dash" class="screen on">
+  <div class="defs"><b>STATUS DEFINITION</b>
+<span><i style="background:#4472C4"></i><b>Completed</b> สถานะ Planner = Completed</span>
+<span><i style="background:#F59E0B"></i><b>Due Soon</b> ครบกำหนดภายใน 0–14 วัน</span>
+<span><i style="background:#ED7D31"></i><b>Slightly Delayed</b> เลยกำหนด 1–7 วัน</span>
+<span><i style="background:#C00000"></i><b>Delayed</b> เลยกำหนดเกิน 7 วัน</span>
+<span class="dn">Total รวมงานที่ยังไม่ระบุ Due Date · วันนับจาก Snapshot Date</span></div>
+  <div class="groups" id="groups"></div>
+  <div class="sec">
+    <h2>Critical Task List</h2>
+    <div class="tblwrap"><table><thead><tr><th>Workstream</th><th>Task</th><th>Status</th><th>Owner</th><th>Due</th><th>Days</th><th>Next Step / Attention</th></tr></thead><tbody id="critRows"></tbody></table></div>
+  </div>
+  <div style="margin-top:10px"><button class="act alt" id="dqBtn" onclick="toggleDQ()">แสดง Data Quality Warning</button></div>
+  <div class="sec" id="dq" style="display:none"></div>
+</section>
+
+<section id="detail" class="screen">
+  <div class="sec">
+    <h2>Task Detail</h2>
+    <div class="filters">
+      <input id="fq" placeholder="Search task, owner, note" oninput="renderDetail()">
+      <select id="fs" onchange="renderDetail()"></select>
+      <select id="fw" onchange="renderDetail()"></select>
+      <select id="fp" onchange="renderDetail()"></select>
+      <select id="fo" onchange="renderDetail()"></select>
+      <select id="fd" onchange="renderDetail()"></select>
+      <button class="act alt" onclick="clearFilters()">Reset</button>
+    </div>
+    <div class="filters" style="grid-template-columns:2fr auto auto auto;margin-bottom:10px">
+      <select id="fb" onchange="renderDetail()"></select>
+      <button class="act alt" onclick="allGroups(true)">ขยายทุกกลุ่ม</button>
+      <button class="act alt" onclick="allGroups(false)">ยุบทุกกลุ่ม</button>
+      <span id="grpCount" style="font-size:11px;color:#64748b;align-self:center;white-space:nowrap"></span>
+    </div>
+    <div class="sums" id="detailSums"></div>
+    <div class="tblwrap"><table><thead><tr><th>ID</th><th>Task / Workstream</th><th>Owner</th><th>Priority</th><th>Start / Due</th><th>Days</th><th>Planner</th><th>Business</th><th>Checklist</th><th>Progress / Next Step</th><th>Delay / Recovery / Executive</th><th>Source</th></tr></thead><tbody id="detailRows"></tbody></table></div>
+  </div>
+</section>
+
+<section id="ana" class="screen">
+  <div class="sec">
+    <h2>Analytics View</h2>
+    <div class="charts">
+      <div><h3 style="font-size:13px;margin:0 0 8px">Business Status</h3><div class="donut" id="donut"></div><div id="donutLg" style="margin-top:10px;display:flex;gap:5px;flex-wrap:wrap"></div></div>
+      <div><h3 style="font-size:13px;margin:0 0 8px">Task Status by Workstream</h3><div class="bars" id="wsBars"></div></div>
+    </div>
+    <div class="charts" style="margin-top:22px;grid-template-columns:1fr 1fr">
+      <div><h3 style="font-size:13px;margin:0 0 8px">Task Status by Owner</h3><div class="bars" id="ownBars"></div></div>
+      <div><h3 style="font-size:13px;margin:0 0 8px">Due Date Distribution</h3><div class="bars" id="dueBars"></div>
+        <h3 style="font-size:13px;margin:16px 0 8px">Delayed Tasks by Workstream</h3><div class="bars" id="delBars"></div></div>
+    </div>
+    <h3 style="font-size:13px;margin:18px 0 8px">Upcoming Milestones</h3>
+    <div class="tblwrap" style="max-height:40vh"><table><thead><tr><th>Due</th><th>Task</th><th>Workstream</th><th>Status</th><th>Owner</th></tr></thead><tbody id="anaRows"></tbody></table></div>
+  </div>
+</section>
+
+<section id="gantt" class="screen">
+  <div class="sec">
+    <h2>Hierarchical Gantt View</h2>
+    <div class="sums" id="ganttSums" style="grid-template-columns:repeat(3,1fr);max-width:620px"></div>
+    <p style="font-size:11px;color:#64748b;margin:0 0 8px">Click a workstream row to expand or collapse its activities. Red dashed line = today, solid navy line = event date.</p>
+    <div class="gantt" id="ganttBoard"></div>
+  </div>
+</section>
+<section id="timeline" class="screen">
+  <div class="sec">
+    <h2>Executive Timeline View · เชื่อมโยงข้อมูล Excel</h2>
+    <p style="font-size:11px;color:#64748b;margin:0 0 10px">ใช้ฐานข้อมูล Planner ชุดเดียวกับหน้า Dashboard, Gantt และ Task Detail — อัปเดตอัตโนมัติเมื่อเปลี่ยนไฟล์ Excel ต้นทาง
+    <iframe id="tlFrame" title="Spark2027 Timeline" sandbox="allow-scripts allow-same-origin allow-popups allow-downloads allow-forms" referrerpolicy="no-referrer" style="width:100%;height:calc(100vh - 190px);min-height:760px;border:1px solid #dbe3ec;border-radius:14px;background:#fff"></iframe>
+  </div>
+</section>
+
+<section id="bgauge" class="screen">
+  <div class="sec">
+    <h2>Bucket Health Gauges</h2>
+    <div class="bg-tools">
+      <input id="bgq" placeholder="ค้นหา Bucket" oninput="renderBG()">
+      <select id="bgw" onchange="renderBG()"></select>
+      <select id="bgs" onchange="renderBG()">
+        <option value="code">เรียงตามรหัส Bucket</option>
+        <option value="low">Health Score น้อยไปมาก</option>
+        <option value="high">Health Score มากไปน้อย</option>
+        <option value="late">Delayed มากไปน้อย</option>
+      </select>
+      <button class="act alt" onclick="clearBG()">Reset</button>
+      <span class="bg-note" id="bgCount"></span>
+    </div>
+    <div class="sums" id="bgSums"></div>
+    <div class="bg-wrap" id="bgBody"></div>
+  </div>
+</section>
+</div>
+
+<div class="wm" style="max-width:1720px;margin:24px auto 12px">powered by AI</div>
+<div class="modal" id="modal">
+  <div class="editor">
+    <div class="ebar">
+      <button onclick="addTask()">+ Add Task</button>
+      <button onclick="saveEd()">Save &amp; Refresh</button>
+      <button onclick="exportCSV()">Export CSV</button>
+      <button onclick="resetData()">Reset to Source Data</button>
+      <button class="act alt" onclick="closeEd()">Close</button>
+    </div>
+    <div class="filters" id="edFilters" style="grid-template-columns:1.6fr repeat(5,1fr) auto;padding:8px 4px">
+      <input id="efq" placeholder="ค้นหา Task / Owner / Notes" oninput="renderEd()">
+      <select id="efw" onchange="renderEd()"></select>
+      <select id="efs" onchange="renderEd()"></select>
+      <select id="efp" onchange="renderEd()"></select>
+      <select id="efo" onchange="renderEd()"></select>
+      <select id="efpl" onchange="renderEd()"></select>
+      <button class="act alt" onclick="clearEdFilters()">Reset</button>
+    </div>
+    <p id="edCount" style="font-size:11px;color:#64748b;margin:0 0 8px;padding-left:4px"></p>
+    <div id="edCards" class="edlist"></div>
+  </div>
+</div>
+<div class="modal" id="impModal"><div class="editor" style="max-width:860px;margin:4vh auto">
+  <div class="ebar"><b style="font-size:15px;color:#123e69;align-self:center">อัปเดตข้อมูลจาก Planner Excel</b><span style="flex:1"></span><button class="act alt" onclick="closeImport()">Close</button></div>
+  <ol style="font-size:12.5px;color:#334155;line-height:1.9;margin:12px 0">
+    <li>เปิด Planner → ⋯ → <b>Export plan to Excel</b></li>
+    <li>ลากไฟล์ .xlsx มาวางในกรอบด้านล่าง หรือคลิกเพื่อเลือกไฟล์</li>
+    <li>ตรวจสรุปการเปลี่ยนแปลง แล้วกด <b>ยืนยันอัปเดต</b></li></ol>
+  <label id="impDrop" style="display:block;border:2px dashed #93b4dd;border-radius:14px;padding:30px;text-align:center;cursor:pointer;background:#f6faff;font-size:13px;color:#24476f">
+    <b style="font-size:14px">วางไฟล์ Planner export (.xlsx) ที่นี่ หรือคลิกเพื่อเลือก</b><br><span style="color:#64748b">ไฟล์จะถูกอ่านในเครื่องนี้เท่านั้น ไม่ถูกส่งออกไปภายนอก</span>
+    <input type="file" id="impFile" accept=".xlsx,.xls" hidden></label>
+  <div id="impMsg" style="margin-top:12px;font-size:12.5px"></div>
+  <div id="impPrev" style="margin-top:10px"></div>
+  <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+    <button class="act" id="impApply" style="display:none;background:linear-gradient(150deg,#41a45c,#2f8a49)" onclick="applyImport()">ยืนยันอัปเดต</button>
+    <button class="act alt" id="impRevert" onclick="revertImport()">กลับไปใช้ข้อมูลจาก data.json</button>
+  </div></div></div>
+<div class="toast" id="toast"></div>
+<script src="assets/app.js"></script>
+</body>
+</html>
