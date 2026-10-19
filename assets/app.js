@@ -230,6 +230,29 @@ function allGroups(open){
     document.querySelectorAll('tr.trow.g_'+k).forEach(x=>x.classList.toggle('hide',!open));
   });
 }
+function ckItems(t){return String(t.checklist||'').split(';').map(function(x){return x.trim()}).filter(Boolean)}
+function ckCount(t){
+  var items=ckItems(t), tot=+t.ckTotal||items.length, d=(t.ckDone===''||t.ckDone==null)?null:+t.ckDone;
+  if(d==null&&t.progress!==''&&t.progress!=null&&tot)d=Math.round(+t.progress*tot/100);
+  return {items:items,tot:tot,done:d};
+}
+function ckHTML(t){
+  var c=ckCount(t);
+  if(!c.tot)return '<span style="color:#94a3b8">—</span>';
+  var p=c.done==null?0:Math.round(c.done/c.tot*100), col=p>=100?'#15803d':p>0?'#2563EB':'#94a3b8';
+  return '<details class="ck" onclick="event.stopPropagation()"><summary>'
+    +'<b>'+(c.done==null?'?':c.done)+'/'+c.tot+'</b> <span class="ckpct">'+p+'%</span>'
+    +'<span class="ckbar"><i style="width:'+p+'%;background:'+col+'"></i></span></summary>'
+    +'<ul>'+c.items.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul>'
+    +(c.done?'<div class="cknote">Excel export ไม่ระบุว่าข้อไหนเสร็จ · ดู ✓ รายข้อใน Planner</div>':'')
+    +'</details>';
+}
+(function(){var st=document.createElement('style');st.textContent=
+ '.ckcell{min-width:170px;max-width:280px}.ck summary{cursor:pointer;list-style:none;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;font-size:12px}'
++'.ck summary::-webkit-details-marker{display:none}.ck summary::before{content:"▸";color:#64748b;font-size:10px}.ck[open] summary::before{content:"▾"}'
++'.ckpct{color:#64748b}.ckbar{flex-basis:100%;height:5px;background:#e2e8f0;border-radius:3px;overflow:hidden}.ckbar i{display:block;height:100%}'
++'.ck ul{margin:6px 0 0;padding-left:16px;font-size:11.5px;line-height:1.45;color:#334155}.ck li{margin:2px 0}'
++'.cknote{margin-top:4px;font-size:10.5px;color:#94a3b8}';document.head.appendChild(st)})();
 function renderDetail(){
   const rows=filtered(), z=agg(rows);
   document.getElementById('detailSums').innerHTML=[['Selected',z.total,'#1F4E79'],['Completed',z.completed,'#4472C4'],['No Due Date',z.noDue,'#6B7280'],['Due Soon',z.due,'#F59E0B'],['Slightly Delayed',z.slip,'#ED7D31'],['Delayed',z.delayed,'#C00000']]
@@ -259,7 +282,7 @@ function renderDetail(){
      +'<td><b>'+esc(t.name)+'</b><br><small style="color:#64748b">'+esc(t.srcBucket)+'</small></td>'
      +'<td>'+esc(t.owner||'ต้องตรวจสอบ')+'</td><td>'+esc(t.priority)+'</td><td>'+fmt(t.start)+'<br>'+fmt(t.due)+'</td><td>'+(t.days===''?'—':t.days)+'</td>'
      +'<td>'+esc(t.planner)+'</td><td><span class="badge" style="background:'+t.color+'">'+t.status+'</span>'+(t.manual?'<br><small>Manual Override</small>':'')+'</td>'
-     +'<td>'+(t.progress===''?'—':t.progress+'%')+'</td>'
+     +'<td class="ckcell">'+ckHTML(t)+'</td>'
      +'<td>'+esc(t.cur||'ต้องตรวจสอบ')+'<br><b>Next:</b> '+esc(t.next||'ต้องตรวจสอบ')+'</td>'
      +'<td>'+esc(t.delay||'—')+' '+esc(t.root)+' '+esc(t.impact)+'<br>'+esc(t.recovery)+' '+esc(t.recDate)+'<br>'+esc(t.exec)+'</td>'
      +'<td>'+esc(t.src)+'</td></tr>').join('');
@@ -464,7 +487,7 @@ function delTask(i){if(confirm('ลบงานนี้?')){db.splice(i,1);rend
 function saveEd(){persist();refresh();renderEd();toast('บันทึกข้อมูลแล้ว')}
 function resetData(){if(confirm('คืนค่าข้อมูลกลับเป็นข้อมูลต้นทาง?')){localStorage.removeItem(KEY);db=clone();refresh();renderEd();toast('คืนค่าข้อมูลต้นทางแล้ว')}}
 function exportCSV(){
-  const cols=['id','name','ws','srcBucket','owner','priority','planner','status','manual','start','due','done','days','progress','cur','next','delay','root','impact','recovery','recDate','exec','notes','src'];
+  const cols=['id','name','ws','srcBucket','owner','priority','planner','status','manual','start','due','done','days','ckDone','ckTotal','progress','checklist','cur','next','delay','root','impact','recovery','recDate','exec','notes','src'];
   const csv='\ufeff'+[cols.join(',')].concat(db.map(t=>cols.map(c=>'"'+String(t[c]==null?'':t[c]).replace(/"/g,'""')+'"').join(','))).join('\n');
   dl(new Blob([csv],{type:'text/csv;charset=utf-8'}),'SPARK2027_Task_Database.csv');
 }
@@ -758,6 +781,7 @@ function xIso(v){if(v==null||v==='')return'';if(v instanceof Date){const d=new D
 function xBucket(b){return String(b||'').trim().replace(/\\_/g,'_').replace(/^\d+\.\s*/,'')}
 function xWs(b){const map=[['99','99PMO Tasks'],['01','01Seminar'],['02','02Exhibition'],['03','03Media and PR'],['04','04Website'],['05','05Regis. & Guest'],['06_01','08Spark Hack'],['06_02','06Spark Sense'],['06_0','07Activity'],['07','09On_event']];
   for(const [p,k] of map)if(b.indexOf(p)===0)return k;return'99PMO Tasks'}
+function xCk(v){const m=String(v||'').match(/(\d+)\s*\/\s*(\d+)/);return m?[+m[1],+m[2]]:['','']}
 function xPct(v){const m=String(v||'').match(/(\d+)\s*\/\s*(\d+)/);return m&&+m[2]?Math.round(+m[1]*100/+m[2]):''}
 function parsePlanner(wb,fname){
   const looksId=v=>/^[A-Za-z0-9_\-]{26,30}$/.test(String(v||''));
@@ -777,7 +801,7 @@ function parsePlanner(wb,fname){
     const b=xBucket(r['Bucket']),lab=String(r['Labels']||'').trim(),p=prev[id]||{};
     out.push({id:id,name:n,ws:xWs(b),srcBucket:b,goal:String(r['Goal']||''),planner:String(r['Status']||''),priority:String(r['Priority']||'Medium'),
       owner:String(r['Assigned To']||''),start:xIso(r['Start date']),due:xIso(r['Due date']),finish:xIso(r['Finish date']),done:xIso(r['Completed Date']),
-      checklist:String(r['Checklist Items']||''),progress:xPct(r['Completed Checklist Items']),labels:lab,key:/key deliverable/i.test(lab),notes:String(r['Notes']||''),
+      checklist:String(r['Checklist Items']||''),progress:xPct(r['Completed Checklist Items']),ckDone:xCk(r['Completed Checklist Items'])[0],ckTotal:xCk(r['Completed Checklist Items'])[1],labels:lab,key:/key deliverable/i.test(lab),notes:String(r['Notes']||''),
       cur:p.cur||'',next:p.next||'',delay:p.delay||'',root:p.root||'',impact:p.impact||'',recovery:p.recovery||'',recDate:p.recDate||'',exec:p.exec||'',manual:p.manual||'',
       src:'Excel export '+(exported||fname)})});
   return {tasks:out,file:fname,exported:exported,sheet:name};
