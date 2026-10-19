@@ -29,6 +29,10 @@ function Pct($v) {
   if ((Txt $v) -match '(\d+)\s*/\s*(\d+)' -and [int]$Matches[2] -gt 0) { return [int][math]::Round([int]$Matches[1] * 100 / [int]$Matches[2]) }
   return ""
 }
+function CkPart($v, $i) {
+  if ((Txt $v) -match '(\d+)\s*/\s*(\d+)') { return [int]$Matches[$i] }
+  return ""
+}
 function Mask($o) {
   if (-not $Cfg.maskOwners) { return $o }
   (($o -split ';') | Where-Object { $_.Trim() } | ForEach-Object { ($_.Trim() -split '\s+')[0] }) -join ';'
@@ -97,6 +101,7 @@ foreach ($r in $rows) {
     owner = Mask (Txt $r["Assigned To"])
     start = Iso $r["Start date"]; due = Iso $r["Due date"]; finish = Iso $r["Finish date"]; done = Iso $r["Completed Date"]
     checklist = Txt $r["Checklist Items"]; progress = (Pct $r["Completed Checklist Items"])
+    ckDone = (CkPart $r["Completed Checklist Items"] 1); ckTotal = (CkPart $r["Completed Checklist Items"] 2)
     labels = $lab; key = [bool]($lab -match 'key deliverable'); notes = Txt $r["Notes"]
     src = $srcTag
   }
